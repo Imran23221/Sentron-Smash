@@ -710,87 +710,51 @@
         }
 
         class FXSpecialStrike {
-            constructor(owner, type, fighterInstance, x, y, dir, arena) {
-                this.owner = owner; 
-                this.type = type; 
-                this.fighter = fighterInstance; 
-                this.x = x; 
-                this.y = y; 
-                this.dir = dir; 
-                this.arena = arena; 
-                this.life = 0; 
-                this.maxLife = (type === 'blitz') ? 300 : 80;
-                this.done = false;
-                this.scaleRadius = 32;
+            constructor(owner, type, fighterInstance, x, y, dir) {
+                this.owner = owner; this.type = type; this.fighter = fighterInstance; 
+                this.x = x; this.y = y; this.dir = dir; this.life = 0; this.maxLife = type === 'gojo' ? 85 : 35;
+                this.done = false; this.scaleRadius = type === 'gojo' ? 32 : 0;
             }
-
             update(opp) {
                 this.life++;
-                if (this.life >= this.maxLife) {
-                    this.done = true;
-                    return;
-                }
+                if (this.life >= this.maxLife) this.done = true;
 
-                if (this.type === 'blitz') {
-                    // Lightning damage every second for 5 seconds
-                    if (this.life % 60 === 0) {
-                        opp.takeDamage(25);
-                    }
-                    // Electricity particles on target
-                    if (this.life % 5 === 0) {
-                        GlobalFXManager.activePool.push(new CombatParticle(opp.x, opp.y, Math.random() * 10 - 5, Math.random() * 10 - 5, '#fde047', 15, 6));
-                    }
-                } 
-                else if (this.type === 'duke') {
-                    // Titan Impact: Ground shake and vertical launch
-                    if (this.life === 1) {
-                        this.arena.shake = 30; 
-                        if (opp.isGrounded) {
-                            opp.vy = -35; 
-                            opp.takeDamage(40);
+                if (this.type === 'imran') {
+                    this.x += this.dir * 12; 
+                } else if (this.type === 'elon') {
+                    this.y -= 5; this.x += this.dir * 3;
+                } else if (this.type === 'gojo') {
+                    this.x += this.dir * 9; 
+                    
+                    if (opp) {
+                        let trackingBox = { x: this.x - this.scaleRadius, y: this.y - this.scaleRadius, width: this.scaleRadius * 2, height: this.scaleRadius * 2 };
+                        let enemyBox = { x: opp.x, y: opp.y, width: opp.width, height: opp.height };
+                        if (GeometryBox.intersects(trackingBox, enemyBox)) {
+                            this.fighter.deliverStrikeImpact(opp, 'signature');
                         }
                     }
-                } 
-                else if (this.type === 'elon') {
-                    // Starship Thrust: Asteroid falls from top to opposite player
-                    if (this.life === 1) { this.x = opp.x; this.y = -100; }
-                    this.y += 20;
-                    if (GeometryBox.intersects({x: this.x, y: this.y, width: 80, height: 80}, opp)) {
-                        opp.takeDamage(55);
-                        this.done = true;
-                    }
-                } 
-                else if (this.type === 'imran') {
-                    // Berruca Slice: Spikes emerge
-                    if (this.life === 10) {
-                        if (opp.isGrounded) {
-                            opp.takeDamage(45);
-                        }
-                    }
-                } 
-                else if (this.type === 'gojo') {
-                    // Gojo Vaults
-                    this.x += this.dir * 12;
-                    if (GeometryBox.intersects({x: this.x, y: this.y, width: 64, height: 64}, opp)) {
-                        this.fighter.deliverStrikeImpact(opp, 'signature');
+                    if (Math.random() > 0.3) {
+                        GlobalFXManager.activePool.push(new CombatParticle(this.x, this.y + (Math.random()*20-10), -this.dir*2, Math.random()*2-1, '#a855f7', 20, 4));
                     }
                 }
             }
-
             draw(ctx) {
                 ctx.save();
-                if (this.type === 'blitz') {
-                    ctx.strokeStyle = '#fde047'; ctx.lineWidth = 8;
-                    ctx.beginPath(); ctx.moveTo(this.owner.x, this.owner.y); 
-                    ctx.lineTo(this.owner.x + this.dir * 400, this.owner.y); ctx.stroke();
-                } else if (this.type === 'duke') {
-                    ctx.fillStyle = '#f59e0b'; ctx.fillRect(0, 520, 960, 20);
-                } else if (this.type === 'elon') {
-                    ctx.fillStyle = '#64748b'; ctx.beginPath(); ctx.arc(this.x, this.y, 30, 0, Math.PI * 2); ctx.fill();
-                } else if (this.type === 'imran') {
-                    ctx.fillStyle = '#a855f7'; ctx.fillRect(this.x - 20, 450, 40, 90);
-                } else if (this.type === 'gojo') {
-                    ctx.fillStyle = '#06b6d4'; ctx.beginPath(); ctx.arc(this.x, this.y, 40, 0, Math.PI * 2); ctx.fill();
+                const normalizedAlpha = 1 - (this.life / this.maxLife);
+                ctx.globalAlpha = Math.min(1, normalizedAlpha * 1.5);
+
+                if (this.type === 'gojo') {
+                    let purpleGrad = ctx.createRadialGradient(this.x, this.y, this.scaleRadius * 0.1, this.x, this.y, this.scaleRadius);
+                    purpleGrad.addColorStop(0, '#ffffff');
+                    purpleGrad.addColorStop(0.4, '#c084fc');
+                    purpleGrad.addColorStop(1, 'transparent');
+                    ctx.fillStyle = purpleGrad;
+                    ctx.shadowBlur = 35;
+                    ctx.shadowColor = '#a855f7';
+                    ctx.beginPath(); ctx.arc(this.x, this.y, this.scaleRadius, 0, Math.PI * 2); ctx.fill();
+                } else {
+                    ctx.fillStyle = this.fighter.accentColor;
+                    ctx.fillRect(this.x - 10, this.y - 10, 20, 20);
                 }
                 ctx.restore();
             }
