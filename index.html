@@ -709,52 +709,197 @@
             }
         }
 
-        class FXSpecialStrike {
-            constructor(owner, type, fighterInstance, x, y, dir) {
-                this.owner = owner; this.type = type; this.fighter = fighterInstance; 
-                this.x = x; this.y = y; this.dir = dir; this.life = 0; this.maxLife = type === 'gojo' ? 85 : 35;
-                this.done = false; this.scaleRadius = type === 'gojo' ? 32 : 0;
+        function drawLightningBolt(ctx, x1, y1, x2, y2, segments = 8, jitter = 18, color = '#fde047', width = 4) {
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 12;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            for (let i = 1; i < segments; i++) {
+                const t = i / segments;
+                const mx = x1 + (x2 - x1) * t + (Math.random() - 0.5) * jitter;
+                const my = y1 + (y2 - y1) * t + (Math.random() - 0.5) * jitter;
+                ctx.lineTo(mx, my);
             }
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        class FXSpecialStrike {
+            constructor(owner, type, fighterInstance, x, y, dir, arena) {
+                this.owner = owner; 
+                this.type = type; 
+                this.fighter = fighterInstance; 
+                this.x = x; 
+                this.y = y; 
+                this.dir = dir; 
+                this.arena = arena; 
+                this.life = 0; 
+                this.maxLife = (type === 'michael') ? 300 : 80;
+                this.done = false;
+                this.scaleRadius = 32;
+            }
+
             update(opp) {
                 this.life++;
-                if (this.life >= this.maxLife) this.done = true;
+                this.lastOpp = opp;
+                if (this.life >= this.maxLife) {
+                    this.done = true;
+                    return;
+                }
 
-                if (this.type === 'imran') {
-                    this.x += this.dir * 12; 
-                } else if (this.type === 'elon') {
-                    this.y -= 5; this.x += this.dir * 3;
-                } else if (this.type === 'gojo') {
-                    this.x += this.dir * 9; 
-                    
-                    if (opp) {
-                        let trackingBox = { x: this.x - this.scaleRadius, y: this.y - this.scaleRadius, width: this.scaleRadius * 2, height: this.scaleRadius * 2 };
-                        let enemyBox = { x: opp.x, y: opp.y, width: opp.width, height: opp.height };
-                        if (GeometryBox.intersects(trackingBox, enemyBox)) {
-                            this.fighter.deliverStrikeImpact(opp, 'signature');
+                if (this.type === 'michael') {
+                    // Volt Blitz: a live arc that keeps biting for the full 5 seconds
+                    if (this.life % 15 === 0 && this.life <= 285) {
+                        opp.takeDamage(6, { stun: 6 });
+                    }
+                    if (this.life % 4 === 0) {
+                        GlobalFXManager.activePool.push(new CombatParticle(opp.x + Math.random() * opp.width, opp.y + Math.random() * opp.height, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6, Math.random() > 0.5 ? '#fde047' : '#7dd3fc', 14, 4));
+                        GlobalFXManager.activePool.push(new CombatParticle(this.fighter.x + Math.random() * this.fighter.width, this.fighter.y + Math.random() * this.fighter.height, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6, '#fde047', 14, 4));
+                    }
+                } 
+                else if (this.type === 'duke') {
+                    // Titan Impact: shakes the platform he's standing on; anyone sharing it gets hurt and flung off
+                    if (this.life === 1) {
+                        EngineBridge.shakeAmount = 24;
+                        const dukePlat = EngineBridge.getPlatformUnder(this.fighter);
+                        this.targetPlatform = dukePlat;
+                        if (dukePlat) {
+                            dukePlat.shaking = 26;
+                            const oppPlat = EngineBridge.getPlatformUnder(opp);
+                            if (oppPlat === dukePlat) {
+                                opp.takeDamage(40, { vy: -34, vx: (opp.x < this.fighter.x ? -1 : 1) * 13, stun: 30 });
+                                GlobalFXManager.spawnShockwave(opp.x + opp.width / 2, opp.y + opp.height / 2, '#f59e0b');
+                            }
                         }
                     }
-                    if (Math.random() > 0.3) {
-                        GlobalFXManager.activePool.push(new CombatParticle(this.x, this.y + (Math.random()*20-10), -this.dir*2, Math.random()*2-1, '#a855f7', 20, 4));
+                } 
+                else if (this.type === 'elon') {
+                    // Starship Thrust: an asteroid drops from the sky and slams into the enemy
+                    if (this.life === 1) { this.x = opp.x + opp.width / 2; this.y = -100; }
+                    this.y += 22;
+                    if (this.life % 2 === 0) {
+                        GlobalFXManager.activePool.push(new CombatParticle(this.x + (Math.random() - 0.5) * 10, this.y + 22, (Math.random() - 0.5) * 1.5, -2, Math.random() > 0.5 ? '#f97316' : '#fbbf24', 18, 5));
+                    }
+                    if (!this.done && GeometryBox.intersects({x: this.x - 30, y: this.y - 30, width: 60, height: 60}, opp)) {
+                        opp.takeDamage(70, { vy: -20, vx: (opp.x < this.x ? -1 : 1) * 10, stun: 35 });
+                        GlobalFXManager.spawnShockwave(this.x, this.y, '#f97316');
+                        GlobalFXManager.spawnBurst(this.x, this.y, '#fbbf24', 2);
+                        this.done = true;
+                    }
+                } 
+                else if (this.type === 'imran') {
+                    // Baruka Slice: spikes erupt from his own platform, hitting only whoever else is standing on it
+                    if (this.life === 1) {
+                        this.targetPlatform = EngineBridge.getPlatformUnder(this.fighter);
+                    }
+                    if (this.life === 10) {
+                        const oppPlat = EngineBridge.getPlatformUnder(opp);
+                        if (this.targetPlatform && oppPlat === this.targetPlatform) {
+                            opp.takeDamage(45, { vy: -18, stun: 24 });
+                            GlobalFXManager.spawnShockwave(opp.x + opp.width / 2, opp.y + opp.height / 2, '#a855f7');
+                        }
+                    }
+                } 
+                else if (this.type === 'gojo') {
+                    // Hollow Purple Vault
+                    this.x += this.dir * 12;
+                    if (this.life % 3 === 0) {
+                        GlobalFXManager.activePool.push(new CombatParticle(this.x, this.y, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, Math.random() > 0.5 ? '#a855f7' : '#1e0b35', 16, 3));
+                    }
+                    if (GeometryBox.intersects({x: this.x, y: this.y, width: 64, height: 64}, opp)) {
+                        this.fighter.deliverStrikeImpact(opp, 'signature');
                     }
                 }
             }
+
             draw(ctx) {
                 ctx.save();
-                const normalizedAlpha = 1 - (this.life / this.maxLife);
-                ctx.globalAlpha = Math.min(1, normalizedAlpha * 1.5);
+                if (this.type === 'michael') {
+                    const fx = this.fighter.x + this.fighter.width / 2;
+                    const fy = this.fighter.y + this.fighter.height / 2;
+                    if (this.lastOpp) {
+                        drawLightningBolt(ctx, fx, fy, this.lastOpp.x + this.lastOpp.width / 2, this.lastOpp.y + this.lastOpp.height / 2, 10, 22, '#fde047', 4);
+                    }
+                    for (let i = 0; i < 3; i++) {
+                        const ang = Math.random() * Math.PI * 2;
+                        const r = 18 + Math.random() * 18;
+                        drawLightningBolt(ctx, fx, fy, fx + Math.cos(ang) * r, fy + Math.sin(ang) * r, 4, 8, '#7dd3fc', 2);
+                    }
+                } else if (this.type === 'duke') {
+                    const plat = this.targetPlatform;
+                    if (plat) {
+                        ctx.fillStyle = '#f59e0b';
+                        ctx.fillRect(plat.x, plat.y - 6, plat.width, 6);
+                    } else {
+                        ctx.fillStyle = '#f59e0b'; ctx.fillRect(0, 520, 960, 20);
+                    }
+                } else if (this.type === 'elon') {
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(this.life * 0.2);
+                    const astGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, 32);
+                    astGrad.addColorStop(0, '#94a3b8');
+                    astGrad.addColorStop(0.6, '#475569');
+                    astGrad.addColorStop(1, '#1e293b');
+                    ctx.fillStyle = astGrad;
+                    ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = '#f97316'; ctx.lineWidth = 3;
+                    ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI * 2); ctx.stroke();
+                    ctx.restore();
+                } else if (this.type === 'imran') {
+                    const plat = this.targetPlatform;
+                    if (plat && this.life > 2 && this.life < 45) {
+                        const spikeCount = Math.max(3, Math.floor(plat.width / 35));
+                        const h = Math.min((this.life - 2) * 5, 55);
+                        for (let i = 0; i < spikeCount; i++) {
+                            const sx = plat.x + i * (plat.width / spikeCount) + 6;
+                            ctx.fillStyle = '#a855f7';
+                            ctx.beginPath();
+                            ctx.moveTo(sx, plat.y);
+                            ctx.lineTo(sx + 12, plat.y);
+                            ctx.lineTo(sx + 6, plat.y - h);
+                            ctx.closePath();
+                            ctx.fill();
+                        }
+                    }
+                } else if (this.type === 'gojo') {
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    const spin = this.life * 0.15;
+                    const hpGrad = ctx.createRadialGradient(0, 0, 4, 0, 0, 46);
+                    hpGrad.addColorStop(0, '#f5f3ff');
+                    hpGrad.addColorStop(0.25, '#c084fc');
+                    hpGrad.addColorStop(0.55, '#7c3aed');
+                    hpGrad.addColorStop(0.8, '#4c1d95');
+                    hpGrad.addColorStop(1, 'rgba(76,29,149,0)');
+                    ctx.fillStyle = hpGrad;
+                    ctx.beginPath(); ctx.arc(0, 0, 46, 0, Math.PI * 2); ctx.fill();
 
-                if (this.type === 'gojo') {
-                    let purpleGrad = ctx.createRadialGradient(this.x, this.y, this.scaleRadius * 0.1, this.x, this.y, this.scaleRadius);
-                    purpleGrad.addColorStop(0, '#ffffff');
-                    purpleGrad.addColorStop(0.4, '#c084fc');
-                    purpleGrad.addColorStop(1, 'transparent');
-                    ctx.fillStyle = purpleGrad;
-                    ctx.shadowBlur = 35;
-                    ctx.shadowColor = '#a855f7';
-                    ctx.beginPath(); ctx.arc(this.x, this.y, this.scaleRadius, 0, Math.PI * 2); ctx.fill();
-                } else {
-                    ctx.fillStyle = this.fighter.accentColor;
-                    ctx.fillRect(this.x - 10, this.y - 10, 20, 20);
+                    ctx.rotate(spin);
+                    ctx.globalCompositeOperation = 'lighter';
+                    ctx.fillStyle = 'rgba(96,165,250,0.55)';
+                    ctx.beginPath(); ctx.arc(-14, 0, 22, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = 'rgba(244,63,94,0.55)';
+                    ctx.beginPath(); ctx.arc(14, 0, 22, 0, Math.PI * 2); ctx.fill();
+                    ctx.globalCompositeOperation = 'source-over';
+
+                    ctx.fillStyle = '#0b0014';
+                    ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.fill();
+
+                    ctx.strokeStyle = 'rgba(216,180,254,0.9)';
+                    ctx.lineWidth = 2;
+                    for (let i = 0; i < 8; i++) {
+                        const a = spin * 1.4 + i * (Math.PI / 4);
+                        ctx.beginPath();
+                        ctx.moveTo(Math.cos(a) * 14, Math.sin(a) * 14);
+                        ctx.lineTo(Math.cos(a) * 50, Math.sin(a) * 50);
+                        ctx.stroke();
+                    }
+                    ctx.restore();
                 }
                 ctx.restore();
             }
@@ -884,6 +1029,12 @@
                     GlobalFXManager.spawnBurst(target.x + target.width/2, target.y + target.height/2, '#ffffff', 0.8);
                 }
             }
+            takeDamage(amount, options = {}) {
+                this.percentage += amount;
+                if (options.vx !== undefined) this.vx = options.vx;
+                if (options.vy !== undefined) this.vy = options.vy;
+                if (options.stun) this.stunFrames = Math.max(this.stunFrames, options.stun);
+            }
             triggerRespawnSequence() {
                 this.stocks--; this.percentage = 0; this.x = this.originX; this.y = this.originY; this.vx = 0; this.vy = 0; this.stunFrames = 35;
                 GlobalFXManager.spawnShockwave(this.originX + this.width/2, this.originY + this.height/2, '#f43f5e');
@@ -896,7 +1047,16 @@
 
         const EngineBridge = {
             canvasContext: null, animationFrameId: null, playerInstance1: null, playerInstance2: null,
-            activePlatforms: [], hyperionDroneDir: 1, lavaCycleTimer: 0, lavaHeight: 540,
+            activePlatforms: [], hyperionDroneDir: 1, lavaCycleTimer: 0, lavaHeight: 540, shakeAmount: 0,
+
+            getPlatformUnder(fighter) {
+                for (let plat of this.activePlatforms) {
+                    if (fighter.x + fighter.width > plat.x && fighter.x < plat.x + plat.width && Math.abs((fighter.y + fighter.height) - plat.y) < 8) {
+                        return plat;
+                    }
+                }
+                return null;
+            },
 
             buildStageLayout() {
                 this.activePlatforms = [];
@@ -978,23 +1138,36 @@
             },
             renderGraphicsFrame() {
                 const ctx = this.canvasContext;
+                ctx.save();
+                if (this.shakeAmount > 0) {
+                    ctx.translate((Math.random() - 0.5) * this.shakeAmount, (Math.random() - 0.5) * this.shakeAmount);
+                    this.shakeAmount *= 0.87;
+                    if (this.shakeAmount < 0.6) this.shakeAmount = 0;
+                }
+
                 ctx.fillStyle = EngineConfig.stageTheme === 'lava' ? '#140505' : EngineConfig.stageTheme === 'hyperion' ? '#060b14' : '#0a0d16';
-                ctx.fillRect(0, 0, 960, 540);
+                ctx.fillRect(-20, -20, 1000, 580);
 
                 this.playerInstance1.processPhysicsFrame(this.activePlatforms);
                 this.playerInstance2.processPhysicsFrame(this.activePlatforms);
 
                 this.activePlatforms.forEach(plat => {
                     ctx.save();
+                    let drawX = plat.x, drawY = plat.y;
+                    if (plat.shaking > 0) {
+                        drawX += (Math.random() - 0.5) * 7;
+                        drawY += (Math.random() - 0.5) * 5;
+                        plat.shaking--;
+                    }
                     if (plat.type === 'main') {
-                        ctx.fillStyle = '#1e293b'; ctx.fillRect(plat.x, plat.y, plat.width, plat.height);
-                        ctx.fillStyle = '#3b82f6'; ctx.fillRect(plat.x, plat.y, plat.width, 4);
+                        ctx.fillStyle = '#1e293b'; ctx.fillRect(drawX, drawY, plat.width, plat.height);
+                        ctx.fillStyle = '#3b82f6'; ctx.fillRect(drawX, drawY, plat.width, 4);
                     } else if (plat.type === 'moving_drone') {
-                        ctx.fillStyle = '#065f46'; ctx.fillRect(plat.x, plat.y, plat.width, plat.height);
-                        ctx.fillStyle = '#10b981'; ctx.fillRect(plat.x, plat.y, plat.width, 3);
+                        ctx.fillStyle = '#065f46'; ctx.fillRect(drawX, drawY, plat.width, plat.height);
+                        ctx.fillStyle = '#10b981'; ctx.fillRect(drawX, drawY, plat.width, 3);
                     } else {
-                        ctx.fillStyle = '#334155'; ctx.fillRect(plat.x, plat.y, plat.width, plat.height);
-                        ctx.fillStyle = '#64748b'; ctx.fillRect(plat.x, plat.y, plat.width, 2);
+                        ctx.fillStyle = '#334155'; ctx.fillRect(drawX, drawY, plat.width, plat.height);
+                        ctx.fillStyle = '#64748b'; ctx.fillRect(drawX, drawY, plat.width, 2);
                     }
                     ctx.restore();
                 });
@@ -1011,6 +1184,7 @@
                 this.playerInstance1.draw(ctx);
                 this.playerInstance2.draw(ctx);
                 GlobalFXManager.renderAll(ctx, this.playerInstance1, this.playerInstance2);
+                ctx.restore();
                 this.refreshDisplayStrings();
             },
             refreshDisplayStrings() {
