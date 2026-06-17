@@ -471,6 +471,12 @@
 
             <button id="mode-toggle-btn" onclick="toggleGameMode()" class="action-btn ui-font" style="background: #1e293b; box-shadow: none; border: 1px solid #334155;">⚔️ MODE: 2 PLAYER (P2 = HUMAN)</button>
 
+            <div id="cpu-difficulty-row" class="hidden" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+                <button id="diff-btn-easy" onclick="setCPUDifficulty('easy')" class="action-btn ui-font" style="padding: 12px; font-size: 0.85rem; margin-bottom: 0;">EASY</button>
+                <button id="diff-btn-medium" onclick="setCPUDifficulty('medium')" class="action-btn ui-font" style="padding: 12px; font-size: 0.85rem; margin-bottom: 0;">MEDIUM</button>
+                <button id="diff-btn-hard" onclick="setCPUDifficulty('hard')" class="action-btn ui-font" style="padding: 12px; font-size: 0.85rem; margin-bottom: 0;">HARD</button>
+            </div>
+
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                 <button onclick="NavigationController.navigateTo('view-main-menu')" class="action-btn ui-font" style="background: #1e293b; box-shadow: none;">BACK TO CORE</button>
                 <button id="character-forward-trigger" disabled onclick="NavigationController.navigateTo('view-map-select')" class="action-btn ui-font">PROCEED TO MAP SELECT</button>
@@ -604,11 +610,33 @@
         let SelectedFighterP1 = null;
         let SelectedFighterP2 = null;
         let P2IsCPU = false;
+        let CPUDifficulty = 'medium';
+
+        const CPU_DIFFICULTY_PRESETS = {
+            easy:   { moveSpeedMod: 0.60, lightAtkChance: 0.04, sigAtkChance: 0.010, jumpDodgeChance: 0.02, randomJumpChance: 0.004, mistakeChance: 0.35, reactionDelay: 110 },
+            medium: { moveSpeedMod: 0.85, lightAtkChance: 0.10, sigAtkChance: 0.025, jumpDodgeChance: 0.05, randomJumpChance: 0.008, mistakeChance: 0.15, reactionDelay: 90 },
+            hard:   { moveSpeedMod: 1.05, lightAtkChance: 0.18, sigAtkChance: 0.045, jumpDodgeChance: 0.09, randomJumpChance: 0.012, mistakeChance: 0.04, reactionDelay: 65 }
+        };
 
         function toggleGameMode() {
             P2IsCPU = !P2IsCPU;
             const btn = document.getElementById('mode-toggle-btn');
             btn.innerText = P2IsCPU ? '🤖 MODE: 1 PLAYER (P2 = CPU)' : '⚔️ MODE: 2 PLAYER (P2 = HUMAN)';
+            document.getElementById('cpu-difficulty-row').classList.toggle('hidden', !P2IsCPU);
+        }
+
+        function setCPUDifficulty(level) {
+            CPUDifficulty = level;
+            ['easy', 'medium', 'hard'].forEach(l => {
+                const btn = document.getElementById(`diff-btn-${l}`);
+                if (l === level) {
+                    btn.style.background = 'linear-gradient(90deg, #6366f1, #8b5cf6)';
+                    btn.style.boxShadow = '0 4px 15px rgba(99, 102, 241, 0.3)';
+                } else {
+                    btn.style.background = '#1e293b';
+                    btn.style.boxShadow = 'none';
+                }
+            });
         }
 
         const NavigationController = {
@@ -1095,11 +1123,13 @@
                 this.playerInstance2 = new ArenaFighter(580, 200, SelectedFighterP2, 2);
 
                 this.P2IsCPU = P2IsCPU;
+                this.cpuDifficulty = CPUDifficulty;
                 this.cpuThinkTimer = 0;
                 this.cpuMoveBias = 1;
+                this.cpuMistakeActive = false;
 
                 document.getElementById('hud-p1-label').innerText = this.playerInstance1.name;
-                document.getElementById('hud-p2-label').innerText = this.P2IsCPU ? `${this.playerInstance2.name} (CPU)` : this.playerInstance2.name;
+                document.getElementById('hud-p2-label').innerText = this.P2IsCPU ? `${this.playerInstance2.name} (CPU - ${this.cpuDifficulty.toUpperCase()})` : this.playerInstance2.name;
 
                 if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
                 this.animationFrameId = requestAnimationFrame(() => this.executeCoreFrameLoop());
@@ -1133,6 +1163,8 @@
                 const foe = this.playerInstance1;
                 if (cpu.stunFrames > 0) return;
 
+                const diff = CPU_DIFFICULTY_PRESETS[this.cpuDifficulty] || CPU_DIFFICULTY_PRESETS.medium;
+
                 this.cpuThinkTimer++;
                 const dx = foe.x - cpu.x;
                 const dy = foe.y - cpu.y;
@@ -1140,30 +1172,34 @@
                 const lightRange = 70;
                 const sigRange = 95;
 
-                // Re-roll a little "personality" wobble every couple seconds so movement isn't robotic
-                if (this.cpuThinkTimer % 90 === 0) {
+                // Re-roll a little "personality" wobble (and decide if it's about to fumble) on a difficulty-tuned cadence
+                if (this.cpuThinkTimer % diff.reactionDelay === 0) {
                     this.cpuMoveBias = 0.7 + Math.random() * 0.6;
+                    this.cpuMistakeActive = Math.random() < diff.mistakeChance;
                 }
 
+                let desiredDir = dx >= 0 ? 1 : -1;
+                if (this.cpuMistakeActive) desiredDir *= -1; // briefly drifts the wrong way, like a bad read
+
                 if (dist > lightRange) {
-                    cpu.vx = Math.sign(dx) * cpu.speedConstant * this.cpuMoveBias;
+                    cpu.vx = desiredDir * cpu.speedConstant * this.cpuMoveBias * diff.moveSpeedMod;
                     cpu.facingDirection = dx >= 0 ? 1 : -1;
                 } else {
                     cpu.facingDirection = dx >= 0 ? 1 : -1;
                     if (this.cpuThinkTimer % 40 === 0 && Math.random() < 0.4) {
-                        cpu.vx = -Math.sign(dx) * cpu.speedConstant * 0.5;
+                        cpu.vx = -Math.sign(dx) * cpu.speedConstant * 0.5 * diff.moveSpeedMod;
                     }
                 }
 
-                if (cpu.isGrounded && dist < 220 && dy < -30 && Math.random() < 0.05) {
+                if (cpu.isGrounded && dist < 220 && dy < -30 && Math.random() < diff.jumpDodgeChance) {
                     cpu.executeJumpAction();
-                } else if (cpu.isGrounded && Math.random() < 0.008) {
+                } else if (cpu.isGrounded && Math.random() < diff.randomJumpChance) {
                     cpu.executeJumpAction();
                 }
 
-                if (dist < sigRange && cpu.signatureUnlocked && Math.random() < 0.025) {
+                if (dist < sigRange && cpu.signatureUnlocked && Math.random() < diff.sigAtkChance) {
                     cpu.initiateAttackSequence(foe, 'signature');
-                } else if (dist < lightRange && Math.random() < 0.1) {
+                } else if (dist < lightRange && Math.random() < diff.lightAtkChance) {
                     cpu.initiateAttackSequence(foe, 'light');
                 }
             },
@@ -1280,6 +1316,7 @@
         window.addEventListener('DOMContentLoaded', () => {
             InputTracker.initializeListeners();
             buildRosterGridDOM();
+            setCPUDifficulty('medium');
         });
     </script>
 </body>
