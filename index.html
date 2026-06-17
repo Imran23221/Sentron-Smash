@@ -469,6 +469,8 @@
                 </div>
             </div>
 
+            <button id="mode-toggle-btn" onclick="toggleGameMode()" class="action-btn ui-font" style="background: #1e293b; box-shadow: none; border: 1px solid #334155;">⚔️ MODE: 2 PLAYER (P2 = HUMAN)</button>
+
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                 <button onclick="NavigationController.navigateTo('view-main-menu')" class="action-btn ui-font" style="background: #1e293b; box-shadow: none;">BACK TO CORE</button>
                 <button id="character-forward-trigger" disabled onclick="NavigationController.navigateTo('view-map-select')" class="action-btn ui-font">PROCEED TO MAP SELECT</button>
@@ -601,6 +603,13 @@
 
         let SelectedFighterP1 = null;
         let SelectedFighterP2 = null;
+        let P2IsCPU = false;
+
+        function toggleGameMode() {
+            P2IsCPU = !P2IsCPU;
+            const btn = document.getElementById('mode-toggle-btn');
+            btn.innerText = P2IsCPU ? '🤖 MODE: 1 PLAYER (P2 = CPU)' : '⚔️ MODE: 2 PLAYER (P2 = HUMAN)';
+        }
 
         const NavigationController = {
             currentView: 'view-main-menu',
@@ -1085,6 +1094,13 @@
                 this.playerInstance1 = new ArenaFighter(350, 200, SelectedFighterP1, 1);
                 this.playerInstance2 = new ArenaFighter(580, 200, SelectedFighterP2, 2);
 
+                this.P2IsCPU = P2IsCPU;
+                this.cpuThinkTimer = 0;
+                this.cpuMoveBias = 1;
+
+                document.getElementById('hud-p1-label').innerText = this.playerInstance1.name;
+                document.getElementById('hud-p2-label').innerText = this.P2IsCPU ? `${this.playerInstance2.name} (CPU)` : this.playerInstance2.name;
+
                 if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
                 this.animationFrameId = requestAnimationFrame(() => this.executeCoreFrameLoop());
             },
@@ -1102,12 +1118,53 @@
                     if (InputTracker.isPressed('s')) this.playerInstance1.initiateAttackSequence(this.playerInstance2, 'light');
                     if (InputTracker.isPressed('f')) this.playerInstance1.initiateAttackSequence(this.playerInstance2, 'signature');
                 }
-                if (this.playerInstance2.stunFrames <= 0) {
+                if (this.P2IsCPU) {
+                    this.runCPUBrain();
+                } else if (this.playerInstance2.stunFrames <= 0) {
                     if (InputTracker.isPressed('arrowleft')) { this.playerInstance2.vx = -this.playerInstance2.speedConstant; this.playerInstance2.facingDirection = -1; }
                     if (InputTracker.isPressed('arrowright')) { this.playerInstance2.vx = this.playerInstance2.speedConstant; this.playerInstance2.facingDirection = 1; }
                     if (InputTracker.isPressed('arrowup')) { this.playerInstance2.executeJumpAction(); InputTracker.activeKeyMap['arrowup'] = false; }
                     if (InputTracker.isPressed('m')) this.playerInstance2.initiateAttackSequence(this.playerInstance1, 'light');
                     if (InputTracker.isPressed('n')) this.playerInstance2.initiateAttackSequence(this.playerInstance1, 'signature');
+                }
+            },
+            runCPUBrain() {
+                const cpu = this.playerInstance2;
+                const foe = this.playerInstance1;
+                if (cpu.stunFrames > 0) return;
+
+                this.cpuThinkTimer++;
+                const dx = foe.x - cpu.x;
+                const dy = foe.y - cpu.y;
+                const dist = Math.abs(dx);
+                const lightRange = 70;
+                const sigRange = 95;
+
+                // Re-roll a little "personality" wobble every couple seconds so movement isn't robotic
+                if (this.cpuThinkTimer % 90 === 0) {
+                    this.cpuMoveBias = 0.7 + Math.random() * 0.6;
+                }
+
+                if (dist > lightRange) {
+                    cpu.vx = Math.sign(dx) * cpu.speedConstant * this.cpuMoveBias;
+                    cpu.facingDirection = dx >= 0 ? 1 : -1;
+                } else {
+                    cpu.facingDirection = dx >= 0 ? 1 : -1;
+                    if (this.cpuThinkTimer % 40 === 0 && Math.random() < 0.4) {
+                        cpu.vx = -Math.sign(dx) * cpu.speedConstant * 0.5;
+                    }
+                }
+
+                if (cpu.isGrounded && dist < 220 && dy < -30 && Math.random() < 0.05) {
+                    cpu.executeJumpAction();
+                } else if (cpu.isGrounded && Math.random() < 0.008) {
+                    cpu.executeJumpAction();
+                }
+
+                if (dist < sigRange && cpu.signatureUnlocked && Math.random() < 0.025) {
+                    cpu.initiateAttackSequence(foe, 'signature');
+                } else if (dist < lightRange && Math.random() < 0.1) {
+                    cpu.initiateAttackSequence(foe, 'light');
                 }
             },
             updateStageHazards() {
