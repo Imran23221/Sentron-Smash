@@ -443,12 +443,13 @@
             <h1 class="hero-title ui-font">SENTRON SMASH</h1>
             <button onclick="NavigationController.navigateTo('view-character-select')" class="action-btn ui-font">ENTER THE ARENA</button>
             <button onclick="toggleConfigModal()" class="action-btn ui-font" style="background: #1e293b; box-shadow: none;">ADJUST STAGE VARIABLES</button>
+            <button onclick="toggleControlsModal()" class="action-btn ui-font" style="background: #1e293b; box-shadow: none;">🎮 CHANGE CONTROLS</button>
             
             <div class="controls-display">
                 <h4>🎮 ENGINE COMBAT PROTOCOLS:</h4>
                 <div class="divider"></div>
-                <p><strong style="color: var(--p1-theme)">PLAYER 1 (LEFT SIDE):</strong> Move [A / D] • Jump [W] • Light Strike [S] • Signature Move [F]</p>
-                <p><strong style="color: var(--p2-theme)">PLAYER 2 (RIGHT SIDE):</strong> Move [← / →] • Jump [↑] • Light Strike [M] • Signature Move [N]</p>
+                <p id="p1-controls-text"><strong style="color: var(--p1-theme)">PLAYER 1 (LEFT SIDE):</strong> Move [A / D] • Jump [W] • Light Strike [S] • Signature Move [F]</p>
+                <p id="p2-controls-text"><strong style="color: var(--p2-theme)">PLAYER 2 (RIGHT SIDE):</strong> Move [← / →] • Jump [↑] • Light Strike [M] • Signature Move [N]</p>
                 <div class="divider"></div>
                 <p style="color: #fbbf24; font-weight: 600; text-align: center;">⚡ CHALLENGE: Score at least 1 KO/Kill to unlock your character's Signature!</p>
             </div>
@@ -549,6 +550,32 @@
                     <div class="card-name ui-font" style="font-size: 0.90rem;">Glitch Void</div>
                     <div class="card-subtext" style="color: #d8b4fe;">🌀 Drifting Platforms</div>
                 </div>
+                <div class="map-card" id="map-card-neon" onclick="assignSelectedMap('neon')">
+                    <div class="map-thumb-preview">
+                        <div style="width: 45px; height: 5px; background: #22d3ee; position: absolute; bottom: 20px; box-shadow: 0 0 8px #22d3ee;"></div>
+                        <div style="width: 16px; height: 4px; background: #67e8f9; position: absolute; bottom: 36px; left: 16px; box-shadow: 0 0 6px #67e8f9;"></div>
+                        <div style="width: 16px; height: 4px; background: #67e8f9; position: absolute; bottom: 36px; right: 16px; box-shadow: 0 0 6px #67e8f9;"></div>
+                    </div>
+                    <div class="card-name ui-font" style="font-size: 0.90rem;">Neon Grid</div>
+                    <div class="card-subtext" style="color: #22d3ee;">⚡ Electrified Pulse Platforms</div>
+                </div>
+                <div class="map-card" id="map-card-ruins" onclick="assignSelectedMap('ruins')">
+                    <div class="map-thumb-preview">
+                        <div style="width: 45px; height: 6px; background: #a8a29e; position: absolute; bottom: 20px;"></div>
+                        <div style="width: 16px; height: 4px; background: #d6d3d1; position: absolute; bottom: 35px; left: 14px; opacity: 0.4;"></div>
+                        <div style="width: 14px; height: 3px; background: #d6d3d1; position: absolute; bottom: 50px; opacity: 0.7;"></div>
+                    </div>
+                    <div class="card-name ui-font" style="font-size: 0.90rem;">Ancient Ruins</div>
+                    <div class="card-subtext" style="color: #a8a29e;">🏛️ Crumbling, Vanishing Platforms</div>
+                </div>
+                <div class="map-card" id="map-card-storm" onclick="assignSelectedMap('storm')">
+                    <div class="map-thumb-preview">
+                        <div style="width: 45px; height: 6px; background: #475569; position: absolute; bottom: 20px;"></div>
+                        <div style="width: 3px; height: 30px; background: #fde047; position: absolute; bottom: 26px; box-shadow: 0 0 8px #fde047;"></div>
+                    </div>
+                    <div class="card-name ui-font" style="font-size: 0.90rem;">Storm Peak</div>
+                    <div class="card-subtext" style="color: #fde047;">⛈️ Random Lightning Strikes</div>
+                </div>
             </div>
 
             <div style="margin-bottom: 24px;">
@@ -620,6 +647,27 @@
         </div>
     </div>
 
+    <div id="view-controls-modal" class="app-view hidden" style="background: rgba(2,3,6,0.9); z-index: 9999;">
+        <div class="panel" style="max-width: 580px;">
+            <h3 class="ui-font" style="margin-bottom: 8px; font-size: 1.4rem;">CONTROL BINDINGS</h3>
+            <p style="color: #64748b; font-size: 0.8rem; margin-bottom: 24px;">Click a key, then press the new key you want to use for that action.</p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 28px; text-align: left; margin-bottom: 24px;">
+                <div>
+                    <div class="slot-tag ui-font" style="color: var(--p1-theme); margin-bottom: 12px;">PLAYER 1</div>
+                    <div id="p1-bindings-list"></div>
+                </div>
+                <div>
+                    <div class="slot-tag ui-font" style="color: var(--p2-theme); margin-bottom: 12px;">PLAYER 2</div>
+                    <div id="p2-bindings-list"></div>
+                </div>
+            </div>
+
+            <button onclick="resetControlsToDefault()" class="action-btn ui-font" style="background: #1e293b; box-shadow: none;">RESET TO DEFAULT</button>
+            <button onclick="toggleControlsModal()" class="action-btn ui-font" style="background: var(--success-color); box-shadow: none; margin-bottom: 0;">DONE</button>
+        </div>
+    </div>
+
     <div id="view-victory-screen" class="app-view hidden" style="background: rgba(2,4,8,0.98); z-index: 9998;">
         <div id="victory-card-panel" class="panel">
             <div class="slot-tag ui-font" id="victory-player-tag" style="font-size: 1rem;">PLAYER 1 TRIUMPHS</div>
@@ -654,6 +702,92 @@
         let CPUDifficulty = 'medium';
         let StageSize = 'large';
 
+        const DEFAULT_KEY_BINDINGS = {
+            p1: { left: 'a', right: 'd', jump: 'w', light: 's', signature: 'f' },
+            p2: { left: 'arrowleft', right: 'arrowright', jump: 'arrowup', light: 'm', signature: 'n' }
+        };
+        let KeyBindings = JSON.parse(JSON.stringify(DEFAULT_KEY_BINDINGS));
+        const BINDING_ACTIONS = [
+            { key: 'left', label: 'Move Left' },
+            { key: 'right', label: 'Move Right' },
+            { key: 'jump', label: 'Jump' },
+            { key: 'light', label: 'Light Strike' },
+            { key: 'signature', label: 'Signature Move' }
+        ];
+        let activeRebindTarget = null;
+
+        function formatKeyName(k) {
+            const niceNames = { 'arrowleft': '←', 'arrowright': '→', 'arrowup': '↑', 'arrowdown': '↓', ' ': 'SPACE' };
+            if (niceNames[k] !== undefined) return niceNames[k];
+            return (k || '?').toUpperCase();
+        }
+
+        function buildControlsModalDOM() {
+            ['p1', 'p2'].forEach(player => {
+                const container = document.getElementById(`${player}-bindings-list`);
+                if (!container) return;
+                container.innerHTML = '';
+                BINDING_ACTIONS.forEach(action => {
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;';
+                    const label = document.createElement('span');
+                    label.style.cssText = 'font-size:0.85rem; color:#cbd5e1;';
+                    label.innerText = action.label;
+                    const btn = document.createElement('button');
+                    btn.id = `bind-btn-${player}-${action.key}`;
+                    btn.className = 'ui-font';
+                    btn.style.cssText = 'background:#0f172a; border:1px solid #334155; color:#fff; padding:6px 14px; border-radius:6px; cursor:pointer; font-size:0.8rem; min-width:90px;';
+                    btn.innerText = formatKeyName(KeyBindings[player][action.key]);
+                    btn.onclick = () => startRebind(player, action.key, btn);
+                    row.appendChild(label);
+                    row.appendChild(btn);
+                    container.appendChild(row);
+                });
+            });
+        }
+
+        function startRebind(player, action, btnEl) {
+            if (activeRebindTarget && activeRebindTarget.btnEl) {
+                activeRebindTarget.btnEl.innerText = formatKeyName(KeyBindings[activeRebindTarget.player][activeRebindTarget.action]);
+                activeRebindTarget.btnEl.style.background = '#0f172a';
+            }
+            activeRebindTarget = { player, action, btnEl };
+            btnEl.innerText = 'PRESS A KEY...';
+            btnEl.style.background = '#7c3aed';
+        }
+
+        function resetControlsToDefault() {
+            KeyBindings = JSON.parse(JSON.stringify(DEFAULT_KEY_BINDINGS));
+            activeRebindTarget = null;
+            buildControlsModalDOM();
+            refreshMainMenuControlsText();
+        }
+
+        function toggleControlsModal() {
+            const modal = document.getElementById('view-controls-modal');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) buildControlsModalDOM();
+        }
+
+        function refreshMainMenuControlsText() {
+            const p1 = KeyBindings.p1, p2 = KeyBindings.p2;
+            const p1El = document.getElementById('p1-controls-text');
+            const p2El = document.getElementById('p2-controls-text');
+            if (p1El) p1El.innerHTML = `<strong style="color: var(--p1-theme)">PLAYER 1 (LEFT SIDE):</strong> Move [${formatKeyName(p1.left)} / ${formatKeyName(p1.right)}] • Jump [${formatKeyName(p1.jump)}] • Light Strike [${formatKeyName(p1.light)}] • Signature Move [${formatKeyName(p1.signature)}]`;
+            if (p2El) p2El.innerHTML = `<strong style="color: var(--p2-theme)">PLAYER 2 (RIGHT SIDE):</strong> Move [${formatKeyName(p2.left)} / ${formatKeyName(p2.right)}] • Jump [${formatKeyName(p2.jump)}] • Light Strike [${formatKeyName(p2.light)}] • Signature Move [${formatKeyName(p2.signature)}]`;
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (!activeRebindTarget) return;
+            e.preventDefault();
+            const keyName = e.key.toLowerCase();
+            KeyBindings[activeRebindTarget.player][activeRebindTarget.action] = keyName;
+            activeRebindTarget.btnEl.innerText = formatKeyName(keyName);
+            activeRebindTarget.btnEl.style.background = '#0f172a';
+            activeRebindTarget = null;
+            refreshMainMenuControlsText();
+        });
+
         function setStageSize(size) {
             StageSize = size;
             ['small', 'large'].forEach(s => {
@@ -673,6 +807,10 @@
             medium: { moveSpeedMod: 0.85, lightAtkChance: 0.10, sigAtkChance: 0.025, jumpDodgeChance: 0.05, randomJumpChance: 0.008, mistakeChance: 0.15, reactionDelay: 90 },
             hard:   { moveSpeedMod: 1.05, lightAtkChance: 0.18, sigAtkChance: 0.045, jumpDodgeChance: 0.09, randomJumpChance: 0.012, mistakeChance: 0.04, reactionDelay: 65 }
         };
+
+        // How many KOs are needed to earn each signature charge, per character.
+        // Everyone's very first charge of the match only costs 1 KO regardless of this table.
+        const SIGNATURE_KILL_REQUIREMENTS = { duke: 2, michael: 2, nova: 2 };
 
         function toggleGameMode() {
             P2IsCPU = !P2IsCPU;
@@ -1086,6 +1224,7 @@
                 this.isGrounded = false; this.doubleJumpAvailable = true; this.facingDirection = controllingPlayerId === 1 ? 1 : -1;
                 this.isAttacking = false; this.attackCooldownActive = false; this.stunFrames = 0;
                 this.scoreKills = 0; this.signatureUnlocked = false; this.signatureCharges = 0;
+                this.killsTowardCharge = 0; this.firstChargeGranted = false;
             }
             draw(ctx2D) {
                 if (this.stunFrames > 0 && Math.floor(Date.now() / 50) % 2 === 0) return;
@@ -1181,7 +1320,17 @@
                 GlobalFXManager.spawnShockwave(this.originX + this.width/2, this.originY + this.height/2, '#f43f5e');
                 
                 const opp = this.playerId === 1 ? EngineBridge.playerInstance2 : EngineBridge.playerInstance1;
-                if (opp) { opp.scoreKills++; opp.signatureCharges++; opp.signatureUnlocked = true; }
+                if (opp) {
+                    opp.scoreKills++;
+                    opp.killsTowardCharge++;
+                    const required = opp.firstChargeGranted ? (SIGNATURE_KILL_REQUIREMENTS[opp.charId] || 1) : 1;
+                    if (opp.killsTowardCharge >= required) {
+                        opp.signatureCharges++;
+                        opp.signatureUnlocked = true;
+                        opp.killsTowardCharge = 0;
+                        opp.firstChargeGranted = true;
+                    }
+                }
                 if (this.stocks < 0) EngineBridge.determineMatchWinner(this.playerId === 1 ? 2 : 1);
             }
         }
@@ -1192,6 +1341,7 @@
 
             getPlatformUnder(fighter) {
                 for (let plat of this.activePlatforms) {
+                    if (plat.intangible) continue;
                     if (fighter.x + fighter.width > plat.x && fighter.x < plat.x + plat.width && Math.abs((fighter.y + fighter.height) - plat.y) < 8) {
                         return plat;
                     }
@@ -1203,6 +1353,10 @@
                 this.hyperionDroneDir = 1;
                 this.frostGustTimer = 0;
                 this.frostGustFrames = 0;
+                this.neonPulseTimer = 0;
+                this.stormTimer = 0;
+                this.stormNextStrike = 90;
+                this.stormStrikes = [];
                 const theme = EngineConfig.stageTheme;
                 let basePlats = [];
 
@@ -1244,6 +1398,26 @@
                         { x: 250, y: 380, width: 460, height: 25, type: 'main' },
                         { x: 130, y: 270, width: 110, height: 12, type: 'drift', baseY: 270, phase: 0 },
                         { x: 730, y: 270, width: 110, height: 12, type: 'drift', baseY: 270, phase: Math.PI }
+                    ];
+                } else if (theme === 'neon') {
+                    basePlats = [
+                        { x: 280, y: 380, width: 400, height: 25, type: 'main' },
+                        { x: 130, y: 280, width: 110, height: 12, type: 'plat' },
+                        { x: 720, y: 280, width: 110, height: 12, type: 'plat' },
+                        { x: 425, y: 190, width: 110, height: 10, type: 'plat' }
+                    ];
+                } else if (theme === 'ruins') {
+                    basePlats = [
+                        { x: 300, y: 380, width: 360, height: 25, type: 'main' },
+                        { x: 130, y: 280, width: 110, height: 12, type: 'plat', vanishOffset: 0 },
+                        { x: 730, y: 280, width: 110, height: 12, type: 'plat', vanishOffset: 110 },
+                        { x: 430, y: 190, width: 100, height: 10, type: 'plat', vanishOffset: 220 }
+                    ];
+                } else if (theme === 'storm') {
+                    basePlats = [
+                        { x: 320, y: 375, width: 320, height: 25, type: 'main' },
+                        { x: 150, y: 290, width: 110, height: 12, type: 'plat' },
+                        { x: 700, y: 290, width: 110, height: 12, type: 'plat' }
                     ];
                 }
 
@@ -1304,20 +1478,20 @@
             },
             processRuntimeInputs() {
                 if (this.playerInstance1.stunFrames <= 0) {
-                    if (InputTracker.isPressed('a')) { this.playerInstance1.vx = -this.playerInstance1.speedConstant; this.playerInstance1.facingDirection = -1; }
-                    if (InputTracker.isPressed('d')) { this.playerInstance1.vx = this.playerInstance1.speedConstant; this.playerInstance1.facingDirection = 1; }
-                    if (InputTracker.isPressed('w')) { this.playerInstance1.executeJumpAction(); InputTracker.activeKeyMap['w'] = false; }
-                    if (InputTracker.isPressed('s')) this.playerInstance1.initiateAttackSequence(this.playerInstance2, 'light');
-                    if (InputTracker.isPressed('f')) this.playerInstance1.initiateAttackSequence(this.playerInstance2, 'signature');
+                    if (InputTracker.isPressed(KeyBindings.p1.left)) { this.playerInstance1.vx = -this.playerInstance1.speedConstant; this.playerInstance1.facingDirection = -1; }
+                    if (InputTracker.isPressed(KeyBindings.p1.right)) { this.playerInstance1.vx = this.playerInstance1.speedConstant; this.playerInstance1.facingDirection = 1; }
+                    if (InputTracker.isPressed(KeyBindings.p1.jump)) { this.playerInstance1.executeJumpAction(); InputTracker.activeKeyMap[KeyBindings.p1.jump] = false; }
+                    if (InputTracker.isPressed(KeyBindings.p1.light)) this.playerInstance1.initiateAttackSequence(this.playerInstance2, 'light');
+                    if (InputTracker.isPressed(KeyBindings.p1.signature)) this.playerInstance1.initiateAttackSequence(this.playerInstance2, 'signature');
                 }
                 if (this.P2IsCPU) {
                     this.runCPUBrain();
                 } else if (this.playerInstance2.stunFrames <= 0) {
-                    if (InputTracker.isPressed('arrowleft')) { this.playerInstance2.vx = -this.playerInstance2.speedConstant; this.playerInstance2.facingDirection = -1; }
-                    if (InputTracker.isPressed('arrowright')) { this.playerInstance2.vx = this.playerInstance2.speedConstant; this.playerInstance2.facingDirection = 1; }
-                    if (InputTracker.isPressed('arrowup')) { this.playerInstance2.executeJumpAction(); InputTracker.activeKeyMap['arrowup'] = false; }
-                    if (InputTracker.isPressed('m')) this.playerInstance2.initiateAttackSequence(this.playerInstance1, 'light');
-                    if (InputTracker.isPressed('n')) this.playerInstance2.initiateAttackSequence(this.playerInstance1, 'signature');
+                    if (InputTracker.isPressed(KeyBindings.p2.left)) { this.playerInstance2.vx = -this.playerInstance2.speedConstant; this.playerInstance2.facingDirection = -1; }
+                    if (InputTracker.isPressed(KeyBindings.p2.right)) { this.playerInstance2.vx = this.playerInstance2.speedConstant; this.playerInstance2.facingDirection = 1; }
+                    if (InputTracker.isPressed(KeyBindings.p2.jump)) { this.playerInstance2.executeJumpAction(); InputTracker.activeKeyMap[KeyBindings.p2.jump] = false; }
+                    if (InputTracker.isPressed(KeyBindings.p2.light)) this.playerInstance2.initiateAttackSequence(this.playerInstance1, 'light');
+                    if (InputTracker.isPressed(KeyBindings.p2.signature)) this.playerInstance2.initiateAttackSequence(this.playerInstance1, 'signature');
                 }
             },
             runCPUBrain() {
@@ -1418,6 +1592,66 @@
                         }
                     });
                 }
+
+                if (theme === 'neon') {
+                    this.neonPulseTimer = (this.neonPulseTimer || 0) + 1;
+                    if (this.neonPulseTimer > 200) {
+                        this.neonPulseTimer = 0;
+                        const candidates = this.activePlatforms.filter(p => p.type !== 'main');
+                        if (candidates.length) {
+                            const target = candidates[Math.floor(Math.random() * candidates.length)];
+                            target.pulsing = 40;
+                            target.pulseHit = false;
+                        }
+                    }
+                    this.activePlatforms.forEach(p => {
+                        if (p.pulsing > 0) {
+                            p.pulsing--;
+                            if (!p.pulseHit && p.pulsing === 20) {
+                                [this.playerInstance1, this.playerInstance2].forEach(fighter => {
+                                    if (this.getPlatformUnder(fighter) === p) {
+                                        fighter.takeDamage(14, { vy: -10, stun: 14 });
+                                        GlobalFXManager.spawnBurst(fighter.x + fighter.width / 2, fighter.y + fighter.height / 2, '#22d3ee', 1);
+                                    }
+                                });
+                                p.pulseHit = true;
+                            }
+                        }
+                    });
+                }
+
+                if (theme === 'ruins') {
+                    this.activePlatforms.forEach(p => {
+                        if (p.type === 'plat') {
+                            p.vanishTimer = (p.vanishTimer || 0) + 1;
+                            const cycle = 330;
+                            const localPhase = (p.vanishTimer + (p.vanishOffset || 0)) % cycle;
+                            p.intangible = localPhase >= 240;
+                        }
+                    });
+                }
+
+                if (theme === 'storm') {
+                    this.stormTimer = (this.stormTimer || 0) + 1;
+                    if (this.stormTimer > (this.stormNextStrike || 90)) {
+                        this.stormTimer = 0;
+                        this.stormNextStrike = 90 + Math.random() * 120;
+                        this.stormStrikes.push({ x: 80 + Math.random() * 800, life: 0, hit: false });
+                    }
+                    this.stormStrikes.forEach(s => {
+                        s.life++;
+                        if (!s.hit && s.life === 16) {
+                            [this.playerInstance1, this.playerInstance2].forEach(p => {
+                                if (Math.abs((p.x + p.width / 2) - s.x) < 38) {
+                                    p.takeDamage(22, { vy: -16, stun: 22 });
+                                    GlobalFXManager.spawnShockwave(s.x, p.y + p.height / 2, '#fde047');
+                                }
+                            });
+                            s.hit = true;
+                        }
+                    });
+                    this.stormStrikes = this.stormStrikes.filter(s => s.life < 30);
+                }
             },
             renderGraphicsFrame() {
                 const ctx = this.canvasContext;
@@ -1428,11 +1662,12 @@
                     if (this.shakeAmount < 0.6) this.shakeAmount = 0;
                 }
 
-                ctx.fillStyle = EngineConfig.stageTheme === 'lava' ? '#140505' : EngineConfig.stageTheme === 'hyperion' ? '#060b14' : EngineConfig.stageTheme === 'sky' ? '#0d1b2e' : EngineConfig.stageTheme === 'frost' ? '#0a1622' : EngineConfig.stageTheme === 'void' ? '#120a1f' : '#0a0d16';
+                ctx.fillStyle = EngineConfig.stageTheme === 'lava' ? '#140505' : EngineConfig.stageTheme === 'hyperion' ? '#060b14' : EngineConfig.stageTheme === 'sky' ? '#0d1b2e' : EngineConfig.stageTheme === 'frost' ? '#0a1622' : EngineConfig.stageTheme === 'void' ? '#120a1f' : EngineConfig.stageTheme === 'neon' ? '#05030f' : EngineConfig.stageTheme === 'ruins' ? '#0c0904' : EngineConfig.stageTheme === 'storm' ? '#06080f' : '#0a0d16';
                 ctx.fillRect(-20, -20, 1000, 580);
 
-                this.playerInstance1.processPhysicsFrame(this.activePlatforms);
-                this.playerInstance2.processPhysicsFrame(this.activePlatforms);
+                const solidPlatforms = this.activePlatforms.filter(p => !p.intangible);
+                this.playerInstance1.processPhysicsFrame(solidPlatforms);
+                this.playerInstance2.processPhysicsFrame(solidPlatforms);
 
                 this.activePlatforms.forEach(plat => {
                     ctx.save();
@@ -1442,6 +1677,7 @@
                         drawY += (Math.random() - 0.5) * 5;
                         plat.shaking--;
                     }
+                    if (plat.intangible) { ctx.globalAlpha = 0.18; }
                     if (plat.type === 'main') {
                         ctx.fillStyle = '#1e293b'; ctx.fillRect(drawX, drawY, plat.width, plat.height);
                         ctx.fillStyle = '#3b82f6'; ctx.fillRect(drawX, drawY, plat.width, 4);
@@ -1451,6 +1687,12 @@
                     } else {
                         ctx.fillStyle = '#334155'; ctx.fillRect(drawX, drawY, plat.width, plat.height);
                         ctx.fillStyle = '#64748b'; ctx.fillRect(drawX, drawY, plat.width, 2);
+                    }
+                    if (plat.pulsing > 0) {
+                        ctx.globalAlpha = Math.min(1, plat.pulsing / 20);
+                        ctx.shadowColor = '#22d3ee'; ctx.shadowBlur = 20;
+                        ctx.fillStyle = '#22d3ee';
+                        ctx.fillRect(drawX, drawY - 4, plat.width, plat.height + 4);
                     }
                     ctx.restore();
                 });
@@ -1462,6 +1704,23 @@
                     ctx.fillRect(0, this.lavaHeight, 960, 540 - this.lavaHeight);
                     ctx.fillStyle = '#facc15'; ctx.fillRect(0, this.lavaHeight, 960, 4);
                     ctx.restore();
+                }
+
+                if (EngineConfig.stageTheme === 'storm' && this.stormStrikes) {
+                    this.stormStrikes.forEach(s => {
+                        if (s.life < 18) {
+                            ctx.save();
+                            ctx.globalAlpha = Math.min(1, s.life / 8);
+                            drawLightningBolt(ctx, s.x + (Math.random() - 0.5) * 6, -10, s.x, 420, 8, 14, '#fde047', 5);
+                            ctx.restore();
+                        } else if (s.life < 30) {
+                            ctx.save();
+                            ctx.globalAlpha = Math.max(0, 1 - (s.life - 18) / 12);
+                            ctx.fillStyle = '#fde047';
+                            ctx.beginPath(); ctx.arc(s.x, 415, 24, 0, Math.PI * 2); ctx.fill();
+                            ctx.restore();
+                        }
+                    });
                 }
 
                 this.playerInstance1.draw(ctx);
@@ -1478,11 +1737,19 @@
                 
                 const p1Sig = document.getElementById('hud-p1-sig-status');
                 if (this.playerInstance1.signatureUnlocked) { p1Sig.innerText = this.playerInstance1.signatureCharges > 1 ? `READY x${this.playerInstance1.signatureCharges}` : "READY"; p1Sig.className = "sig-lock-tag unlocked"; }
-                else { p1Sig.innerText = `LOCKED (KO TO CHARGE)`; p1Sig.className = "sig-lock-tag"; }
+                else {
+                    const req1 = this.playerInstance1.firstChargeGranted ? (SIGNATURE_KILL_REQUIREMENTS[this.playerInstance1.charId] || 1) : 1;
+                    p1Sig.innerText = `LOCKED (${this.playerInstance1.killsTowardCharge}/${req1} KO)`;
+                    p1Sig.className = "sig-lock-tag";
+                }
 
                 const p2Sig = document.getElementById('hud-p2-sig-status');
                 if (this.playerInstance2.signatureUnlocked) { p2Sig.innerText = this.playerInstance2.signatureCharges > 1 ? `READY x${this.playerInstance2.signatureCharges}` : "READY"; p2Sig.className = "sig-lock-tag unlocked"; }
-                else { p2Sig.innerText = `LOCKED (KO TO CHARGE)`; p2Sig.className = "sig-lock-tag"; }
+                else {
+                    const req2 = this.playerInstance2.firstChargeGranted ? (SIGNATURE_KILL_REQUIREMENTS[this.playerInstance2.charId] || 1) : 1;
+                    p2Sig.innerText = `LOCKED (${this.playerInstance2.killsTowardCharge}/${req2} KO)`;
+                    p2Sig.className = "sig-lock-tag";
+                }
             },
             determineMatchWinner(winningPlayerId) {
                 cancelAnimationFrame(this.animationFrameId);
@@ -1508,6 +1775,8 @@
             buildRosterGridDOM();
             setCPUDifficulty('medium');
             setStageSize('large');
+            buildControlsModalDOM();
+            refreshMainMenuControlsText();
         });
     </script>
 </body>
