@@ -153,8 +153,8 @@
         }
         .roster-grid {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 20px;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 16px;
             margin-bottom: 32px;
         }
         .character-card {
@@ -353,6 +353,10 @@
             0%, 100% { opacity: 0.7; }
             50% { opacity: 1; filter: brightness(1.2); }
         }
+        @keyframes previewMove {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(18px); }
+        }
 
         .engine-quit-btn {
             margin-top: 20px;
@@ -517,6 +521,42 @@
                     <div class="card-name ui-font" style="font-size: 0.90rem;">Hyperion Cruise</div>
                     <div class="card-subtext" style="color: #10b981;">⚙️ Moving Cruiser Drone</div>
                 </div>
+                <div class="map-card" id="map-card-sky" onclick="assignSelectedMap('sky')">
+                    <div class="map-thumb-preview">
+                        <div style="width: 35px; height: 5px; background: #93c5fd; position: absolute; bottom: 18px; left: 10px;"></div>
+                        <div style="width: 35px; height: 5px; background: #93c5fd; position: absolute; bottom: 18px; right: 10px;"></div>
+                        <div style="width: 30px; height: 4px; background: #bfdbfe; position: absolute; bottom: 38px;"></div>
+                        <div style="width: 18px; height: 3px; background: #e0f2fe; position: absolute; bottom: 56px;"></div>
+                    </div>
+                    <div class="card-name ui-font" style="font-size: 0.90rem;">Sky Citadel</div>
+                    <div class="card-subtext" style="color: #93c5fd;">☁️ Scattered Cloud Platforms</div>
+                </div>
+                <div class="map-card" id="map-card-frost" onclick="assignSelectedMap('frost')">
+                    <div class="map-thumb-preview">
+                        <div style="width: 45px; height: 6px; background: #67e8f9; position: absolute; bottom: 20px;"></div>
+                        <div style="width: 16px; height: 4px; background: #a5f3fc; position: absolute; bottom: 35px; left: 14px;"></div>
+                        <div style="width: 16px; height: 4px; background: #a5f3fc; position: absolute; bottom: 35px; right: 14px;"></div>
+                    </div>
+                    <div class="card-name ui-font" style="font-size: 0.90rem;">Frozen Tundra</div>
+                    <div class="card-subtext" style="color: #67e8f9;">🌬️ Periodic Wind Gusts</div>
+                </div>
+                <div class="map-card" id="map-card-void" onclick="assignSelectedMap('void')">
+                    <div class="map-thumb-preview">
+                        <div style="width: 50px; height: 6px; background: #a855f7; position: absolute; bottom: 20px;"></div>
+                        <div style="width: 18px; height: 4px; background: #d8b4fe; position: absolute; bottom: 42px; left: 12px; animation: previewMove 2.4s infinite ease-in-out;"></div>
+                        <div style="width: 18px; height: 4px; background: #d8b4fe; position: absolute; bottom: 32px; right: 12px; animation: previewMove 2.4s infinite ease-in-out reverse;"></div>
+                    </div>
+                    <div class="card-name ui-font" style="font-size: 0.90rem;">Glitch Void</div>
+                    <div class="card-subtext" style="color: #d8b4fe;">🌀 Drifting Platforms</div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <div class="slot-tag ui-font" style="text-align: center; margin-bottom: 10px; color: #94a3b8;">ARENA SIZE</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <button id="size-btn-small" onclick="setStageSize('small')" class="action-btn ui-font" style="padding: 14px; margin-bottom: 0;">SMALL</button>
+                    <button id="size-btn-large" onclick="setStageSize('large')" class="action-btn ui-font" style="padding: 14px; margin-bottom: 0;">LARGE</button>
+                </div>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
@@ -604,13 +644,29 @@
             { id: 'elon', name: 'Elon', accentColor: '#ef4444', skinHex: '#f1c27d', shirtHex: '#1e293b', specialTitle: 'Starship Thrust', velocityMod: 0.95, weightMod: 1.15 },
             { id: 'duke', name: 'Duke', accentColor: '#f59e0b', skinHex: '#e0ac69', shirtHex: '#064e3b', specialTitle: 'Titan Impact', velocityMod: 0.90, weightMod: 1.30 },
             { id: 'michael', name: 'Michael', accentColor: '#10b981', skinHex: '#c68642', shirtHex: '#111827', specialTitle: 'Volt Blitz', velocityMod: 1.15, weightMod: 0.90 },
-            { id: 'gojo', name: 'Gojo', accentColor: '#06b6d4', skinHex: '#fff3e0', shirtHex: '#0f172a', specialTitle: 'Hollow Purple', velocityMod: 1.00, weightMod: 1.00 }
+            { id: 'gojo', name: 'Gojo', accentColor: '#06b6d4', skinHex: '#fff3e0', shirtHex: '#0f172a', specialTitle: 'Hollow Purple', velocityMod: 1.00, weightMod: 1.00 },
+            { id: 'nova', name: 'Nova', accentColor: '#fb923c', skinHex: '#f4c89c', shirtHex: '#7c2d12', specialTitle: 'Solar Flare', velocityMod: 1.00, weightMod: 1.05 }
         ];
 
         let SelectedFighterP1 = null;
         let SelectedFighterP2 = null;
         let P2IsCPU = false;
         let CPUDifficulty = 'medium';
+        let StageSize = 'large';
+
+        function setStageSize(size) {
+            StageSize = size;
+            ['small', 'large'].forEach(s => {
+                const btn = document.getElementById(`size-btn-${s}`);
+                if (s === size) {
+                    btn.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+                    btn.style.boxShadow = '0 4px 15px rgba(16,185,129,0.3)';
+                } else {
+                    btn.style.background = '#1e293b';
+                    btn.style.boxShadow = 'none';
+                }
+            });
+        }
 
         const CPU_DIFFICULTY_PRESETS = {
             easy:   { moveSpeedMod: 0.60, lightAtkChance: 0.04, sigAtkChance: 0.010, jumpDodgeChance: 0.02, randomJumpChance: 0.004, mistakeChance: 0.35, reactionDelay: 110 },
@@ -851,6 +907,29 @@
                         this.fighter.deliverStrikeImpact(opp, 'signature');
                     }
                 }
+                else if (this.type === 'nova') {
+                    // Solar Flare: an expanding ring of fire bursts outward from him in every direction
+                    if (this.life === 1) {
+                        this.centerX = this.fighter.x + this.fighter.width / 2;
+                        this.centerY = this.fighter.y + this.fighter.height / 2;
+                        this.hasHit = false;
+                    }
+                    this.ringRadius = this.life * 7;
+                    if (!this.hasHit && this.life > 2) {
+                        const oppCx = opp.x + opp.width / 2;
+                        const oppCy = opp.y + opp.height / 2;
+                        const d = Math.hypot(oppCx - this.centerX, oppCy - this.centerY);
+                        if (Math.abs(d - this.ringRadius) < 18) {
+                            opp.takeDamage(38, { vx: (oppCx < this.centerX ? -1 : 1) * 16, vy: -22, stun: 26 });
+                            GlobalFXManager.spawnShockwave(oppCx, oppCy, '#fb923c');
+                            this.hasHit = true;
+                        }
+                    }
+                    if (this.life % 3 === 0) {
+                        const ang = Math.random() * Math.PI * 2;
+                        GlobalFXManager.activePool.push(new CombatParticle(this.centerX + Math.cos(ang) * this.ringRadius, this.centerY + Math.sin(ang) * this.ringRadius, Math.cos(ang) * 1.5, Math.sin(ang) * 1.5, Math.random() > 0.5 ? '#fb923c' : '#fde047', 16, 4));
+                    }
+                }
             }
 
             draw(ctx) {
@@ -938,7 +1017,30 @@
                     }
                     ctx.restore();
                 }
-                ctx.restore();
+                else if (this.type === 'nova') {
+                    const r = this.ringRadius || 0;
+                    ctx.save();
+                    ctx.translate(this.centerX || this.x, this.centerY || this.y);
+                    const ringGrad = ctx.createRadialGradient(0, 0, Math.max(0, r - 16), 0, 0, r + 16);
+                    ringGrad.addColorStop(0, 'rgba(251,146,60,0)');
+                    ringGrad.addColorStop(0.5, 'rgba(251,146,60,0.85)');
+                    ringGrad.addColorStop(0.8, 'rgba(253,224,71,0.6)');
+                    ringGrad.addColorStop(1, 'rgba(253,224,71,0)');
+                    ctx.fillStyle = ringGrad;
+                    ctx.beginPath(); ctx.arc(0, 0, r + 16, 0, Math.PI * 2); ctx.fill();
+                    ctx.restore();
+
+                    ctx.save();
+                    ctx.translate(this.centerX || this.x, this.centerY || this.y);
+                    const coreGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, 26);
+                    coreGrad.addColorStop(0, '#fff7ed');
+                    coreGrad.addColorStop(0.5, '#fb923c');
+                    coreGrad.addColorStop(1, 'rgba(251,146,60,0)');
+                    ctx.fillStyle = coreGrad;
+                    ctx.beginPath(); ctx.arc(0, 0, 26, 0, Math.PI * 2); ctx.fill();
+                    ctx.restore();
+                }
+            ctx.restore();
             }
         }
 
@@ -983,7 +1085,7 @@
                 this.percentage = 0; this.stocks = EngineConfig.defaultStocks; this.weightMultiplier = configurationData.weightMod;
                 this.isGrounded = false; this.doubleJumpAvailable = true; this.facingDirection = controllingPlayerId === 1 ? 1 : -1;
                 this.isAttacking = false; this.attackCooldownActive = false; this.stunFrames = 0;
-                this.scoreKills = 0; this.signatureUnlocked = false;
+                this.scoreKills = 0; this.signatureUnlocked = false; this.signatureCharges = 0;
             }
             draw(ctx2D) {
                 if (this.stunFrames > 0 && Math.floor(Date.now() / 50) % 2 === 0) return;
@@ -1032,6 +1134,8 @@
 
                 if (attackProfile === 'signature') {
                     GlobalFXManager.registerSignatureGraphics(this.playerId, this.charId, this, this.x + (this.width/2), this.y + (this.height/2), this.facingDirection);
+                    this.signatureCharges = Math.max(0, this.signatureCharges - 1);
+                    this.signatureUnlocked = this.signatureCharges > 0;
                 }
 
                 if (attackProfile === 'light' || (attackProfile === 'signature' && this.charId !== 'gojo')) {
@@ -1077,7 +1181,7 @@
                 GlobalFXManager.spawnShockwave(this.originX + this.width/2, this.originY + this.height/2, '#f43f5e');
                 
                 const opp = this.playerId === 1 ? EngineBridge.playerInstance2 : EngineBridge.playerInstance1;
-                if (opp) { opp.scoreKills++; if (opp.scoreKills >= 1) opp.signatureUnlocked = true; }
+                if (opp) { opp.scoreKills++; opp.signatureCharges++; opp.signatureUnlocked = true; }
                 if (this.stocks < 0) EngineBridge.determineMatchWinner(this.playerId === 1 ? 2 : 1);
             }
         }
@@ -1096,22 +1200,80 @@
             },
 
             buildStageLayout() {
-                this.activePlatforms = [];
+                this.hyperionDroneDir = 1;
+                this.frostGustTimer = 0;
+                this.frostGustFrames = 0;
                 const theme = EngineConfig.stageTheme;
+                let basePlats = [];
 
                 if (theme === 'battlefield') {
-                    this.activePlatforms.push({ x: 200, y: 380, width: 560, height: 25, type: 'main' });
-                    this.activePlatforms.push({ x: 260, y: 280, width: 120, height: 10, type: 'plat' });
-                    this.activePlatforms.push({ x: 580, y: 280, width: 120, height: 10, type: 'plat' });
-                    this.activePlatforms.push({ x: 420, y: 190, width: 120, height: 10, type: 'plat' });
+                    basePlats = [
+                        { x: 200, y: 380, width: 560, height: 25, type: 'main' },
+                        { x: 260, y: 280, width: 120, height: 10, type: 'plat' },
+                        { x: 580, y: 280, width: 120, height: 10, type: 'plat' },
+                        { x: 420, y: 190, width: 120, height: 10, type: 'plat' }
+                    ];
                 } else if (theme === 'lava') {
-                    this.activePlatforms.push({ x: 330, y: 370, width: 300, height: 25, type: 'main' });
-                    this.activePlatforms.push({ x: 140, y: 300, width: 110, height: 12, type: 'plat' });
-                    this.activePlatforms.push({ x: 710, y: 300, width: 110, height: 12, type: 'plat' });
+                    basePlats = [
+                        { x: 330, y: 370, width: 300, height: 25, type: 'main' },
+                        { x: 140, y: 300, width: 110, height: 12, type: 'plat' },
+                        { x: 710, y: 300, width: 110, height: 12, type: 'plat' }
+                    ];
                 } else if (theme === 'hyperion') {
-                    this.activePlatforms.push({ x: 250, y: 390, width: 460, height: 30, type: 'main' });
-                    this.activePlatforms.push({ x: 100, y: 250, width: 120, height: 12, type: 'moving_drone' }); 
+                    basePlats = [
+                        { x: 250, y: 390, width: 460, height: 30, type: 'main' },
+                        { x: 100, y: 250, width: 120, height: 12, type: 'moving_drone' }
+                    ];
+                } else if (theme === 'sky') {
+                    basePlats = [
+                        { x: 210, y: 360, width: 220, height: 20, type: 'plat' },
+                        { x: 540, y: 360, width: 220, height: 20, type: 'plat' },
+                        { x: 375, y: 260, width: 200, height: 14, type: 'plat' },
+                        { x: 200, y: 170, width: 120, height: 10, type: 'plat' },
+                        { x: 650, y: 170, width: 120, height: 10, type: 'plat' }
+                    ];
+                } else if (theme === 'frost') {
+                    basePlats = [
+                        { x: 300, y: 380, width: 360, height: 25, type: 'main' },
+                        { x: 120, y: 290, width: 110, height: 12, type: 'plat' },
+                        { x: 740, y: 290, width: 110, height: 12, type: 'plat' },
+                        { x: 430, y: 200, width: 100, height: 10, type: 'plat' }
+                    ];
+                } else if (theme === 'void') {
+                    basePlats = [
+                        { x: 250, y: 380, width: 460, height: 25, type: 'main' },
+                        { x: 130, y: 270, width: 110, height: 12, type: 'drift', baseY: 270, phase: 0 },
+                        { x: 730, y: 270, width: 110, height: 12, type: 'drift', baseY: 270, phase: Math.PI }
+                    ];
                 }
+
+                this.activePlatforms = this.applyStageSizeScaling(basePlats, StageSize);
+
+                const cx = 480, sizeFactor = 0.72;
+                if (StageSize === 'small') {
+                    this.hyperionMinX = cx - (cx - 90) * sizeFactor;
+                    this.hyperionMaxX = cx + (750 - cx) * sizeFactor;
+                } else {
+                    this.hyperionMinX = 90;
+                    this.hyperionMaxX = 750;
+                }
+            },
+            applyStageSizeScaling(platforms, size) {
+                if (size !== 'small') return platforms.map(p => Object.assign({}, p));
+                const cx = 480, cy = 300, factor = 0.72;
+                return platforms.map(p => {
+                    const oldCenterX = p.x + p.width / 2;
+                    const oldCenterY = p.y + p.height / 2;
+                    const newWidth = p.width * factor;
+                    const newCenterX = cx + (oldCenterX - cx) * factor;
+                    const newCenterY = cy + (oldCenterY - cy) * factor;
+                    const newPlat = Object.assign({}, p);
+                    newPlat.width = newWidth;
+                    newPlat.x = newCenterX - newWidth / 2;
+                    newPlat.y = newCenterY - p.height / 2;
+                    if (p.baseY !== undefined) newPlat.baseY = newPlat.y;
+                    return newPlat;
+                });
             },
             launchRuntimeEngine() {
                 const canvasNode = document.getElementById('mainGameCanvas');
@@ -1210,8 +1372,10 @@
                     let drone = this.activePlatforms.find(p => p.type === 'moving_drone');
                     if (drone) {
                         drone.x += this.hyperionDroneDir * 2.5;
-                        if (drone.x > 750) this.hyperionDroneDir = -1;
-                        if (drone.x < 90) this.hyperionDroneDir = 1;
+                        const maxX = this.hyperionMaxX !== undefined ? this.hyperionMaxX : 750;
+                        const minX = this.hyperionMinX !== undefined ? this.hyperionMinX : 90;
+                        if (drone.x > maxX) this.hyperionDroneDir = -1;
+                        if (drone.x < minX) this.hyperionDroneDir = 1;
                     }
                 }
 
@@ -1228,6 +1392,32 @@
                         }
                     });
                 }
+
+                if (theme === 'frost') {
+                    this.frostGustTimer = (this.frostGustTimer || 0) + 1;
+                    if (this.frostGustTimer % 240 === 0) {
+                        this.frostGustDir = Math.random() > 0.5 ? 1 : -1;
+                        this.frostGustFrames = 18;
+                    }
+                    if (this.frostGustFrames > 0) {
+                        this.frostGustFrames--;
+                        [this.playerInstance1, this.playerInstance2].forEach(p => {
+                            p.vx += this.frostGustDir * 0.6;
+                        });
+                        if (this.frostGustFrames % 4 === 0) {
+                            GlobalFXManager.activePool.push(new CombatParticle(this.frostGustDir > 0 ? -10 : 970, 100 + Math.random() * 300, this.frostGustDir * 6, (Math.random() - 0.5) * 1, '#a5f3fc', 20, 3));
+                        }
+                    }
+                }
+
+                if (theme === 'void') {
+                    this.activePlatforms.forEach(p => {
+                        if (p.type === 'drift') {
+                            p.phase += 0.035;
+                            p.y = p.baseY + Math.sin(p.phase) * 18;
+                        }
+                    });
+                }
             },
             renderGraphicsFrame() {
                 const ctx = this.canvasContext;
@@ -1238,7 +1428,7 @@
                     if (this.shakeAmount < 0.6) this.shakeAmount = 0;
                 }
 
-                ctx.fillStyle = EngineConfig.stageTheme === 'lava' ? '#140505' : EngineConfig.stageTheme === 'hyperion' ? '#060b14' : '#0a0d16';
+                ctx.fillStyle = EngineConfig.stageTheme === 'lava' ? '#140505' : EngineConfig.stageTheme === 'hyperion' ? '#060b14' : EngineConfig.stageTheme === 'sky' ? '#0d1b2e' : EngineConfig.stageTheme === 'frost' ? '#0a1622' : EngineConfig.stageTheme === 'void' ? '#120a1f' : '#0a0d16';
                 ctx.fillRect(-20, -20, 1000, 580);
 
                 this.playerInstance1.processPhysicsFrame(this.activePlatforms);
@@ -1287,12 +1477,12 @@
                 document.getElementById('hud-p2-stocks').innerText = '⭐'.repeat(Math.max(0, this.playerInstance2.stocks));
                 
                 const p1Sig = document.getElementById('hud-p1-sig-status');
-                if (this.playerInstance1.signatureUnlocked) { p1Sig.innerText = "READY"; p1Sig.className = "sig-lock-tag unlocked"; }
-                else { p1Sig.innerText = `LOCKED (${this.playerInstance1.scoreKills}/1)`; p1Sig.className = "sig-lock-tag"; }
+                if (this.playerInstance1.signatureUnlocked) { p1Sig.innerText = this.playerInstance1.signatureCharges > 1 ? `READY x${this.playerInstance1.signatureCharges}` : "READY"; p1Sig.className = "sig-lock-tag unlocked"; }
+                else { p1Sig.innerText = `LOCKED (KO TO CHARGE)`; p1Sig.className = "sig-lock-tag"; }
 
                 const p2Sig = document.getElementById('hud-p2-sig-status');
-                if (this.playerInstance2.signatureUnlocked) { p2Sig.innerText = "READY"; p2Sig.className = "sig-lock-tag unlocked"; }
-                else { p2Sig.innerText = `LOCKED (${this.playerInstance2.scoreKills}/1)`; p2Sig.className = "sig-lock-tag"; }
+                if (this.playerInstance2.signatureUnlocked) { p2Sig.innerText = this.playerInstance2.signatureCharges > 1 ? `READY x${this.playerInstance2.signatureCharges}` : "READY"; p2Sig.className = "sig-lock-tag unlocked"; }
+                else { p2Sig.innerText = `LOCKED (KO TO CHARGE)`; p2Sig.className = "sig-lock-tag"; }
             },
             determineMatchWinner(winningPlayerId) {
                 cancelAnimationFrame(this.animationFrameId);
@@ -1317,6 +1507,7 @@
             InputTracker.initializeListeners();
             buildRosterGridDOM();
             setCPUDifficulty('medium');
+            setStageSize('large');
         });
     </script>
 </body>
